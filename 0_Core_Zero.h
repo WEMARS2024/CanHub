@@ -47,6 +47,7 @@ unsigned int CR0_uiTxIndex = 0;
 unsigned int CR0_uiTxPacketIndex = 0;
 unsigned int CR0_uiTxPacketSize = 0;
 
+
 char strCAN_RxGPS[200];
 char strCAN_RxIMU[200];
 
@@ -227,20 +228,67 @@ unsigned int  = 0;
   }
 }
 
-void LoadTxBuffer()
+unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned  int uiPacketIndx)
 {
+  unsigned int uiIndexThroughGPSSting;
+
   tx_frame.FIR.B.FF = CAN_frame_std;
-  tx_frame.MsgID = uiID;
+  tx_frame.MsgID = uiId;
   tx_frame.FIR.B.DLC = 8;
-  tx_frame.data.u8[0] = 0x09;
-  tx_frame.data.u8[1] = 0x0A;
-  tx_frame.data.u8[2] = 0x0B;
-  tx_frame.data.u8[3] = 0x0C;
-  tx_frame.data.u8[4] = 0x0D;
-  tx_frame.data.u8[5] = 0x0E;
-  tx_frame.data.u8[6] = 0x0F;
-  tx_frame.data.u8[7] = 0x010;
+  if(uiPacketCount == 0)
+  {
+    tx_frame.FIR.B.DLC = 1;
+    tx_frame.data.u8[0] = 0;
+    return(0);
+  }
+  else
+  {
+    if((uiId >= 110) && (uiId <= 145))//GPS data
+    {
+      if(uiPacketIndx == 1)
+      {
+        tx_frame.data.u8[0] = uiPacketCount;
+        for(uiIndexThroughGPSSting = 1;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
+        {
+          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
+        }
+        return(uiPacketIndx + 1);
+      }
+      else
+      {
+        for(uiIndexThroughGPSSting = 0;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
+        {
+          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
+        }
+        return(uiPacketIndx + 1);
+      }
+     
+    }
+    else if ((uiId >= 150) && (uiId <= 190))  //IMU data
+    {
+      if(uiPacketIndx == 1)
+      {
+        tx_frame.data.u8[0] = uiPacketCount;
+        for(uiIndexThroughGPSSting = 1;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
+        {
+          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxIMU[uiIndexThroughGPSSting];
+        }
+        return(uiPacketIndx + 1);
+      }
+      else
+      {
+        for(uiIndexThroughGPSSting = 0;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
+        {
+          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
+        }
+        return(uiPacketIndx + 1);
+      }
+    }
+  }
+  
 
 }
+
+void()
 
 #endif
