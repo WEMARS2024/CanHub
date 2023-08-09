@@ -32,19 +32,21 @@ void loop()
       case 'g':
       case 'G':
       {
-        LoadTxBuffer(100,0); //Request GPS data
+        LoadTxBuffer(100,0,0); //Request GPS data
+        CR0_uiGPSRxPacketIDExpected = 110;
         break;
       }
       case 'i':
       case 'I':
       {
-        LoadTxBuffer(101,0); //request IMU data
+        LoadTxBuffer(101,0,0); //request IMU data
+        CR0_uiIMURxPacketIDExpected = 150;
         break;
       }
       case 'E':
       case 'e':
       {
-        LoadTxBuffer(0,0);  //emergency stop
+        LoadTxBuffer(0,0,0);  //emergency stop
         break;
       }
     }
@@ -52,5 +54,6 @@ void loop()
 
   }
 
+  if()
   
 }

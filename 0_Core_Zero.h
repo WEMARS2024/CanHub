@@ -48,6 +48,12 @@ unsigned int CR0_uiTxPacketIndex = 0;
 unsigned int CR0_uiTxPacketSize = 0;
 
 
+unsigned int CR0_uiGPSRxPacketIDExpected;
+unsigned int CR0_uiTotalGPSRxPacketExpected;
+unsigned int CR0_uiIMURxPacketIDExpected;
+
+
+
 char strCAN_RxGPS[200];
 char strCAN_RxIMU[200];
 
@@ -95,22 +101,35 @@ void Core_ZeroCode( void * pvParameters )
       if (xQueueReceive(CAN_cfg.rx_queue, &rx_frame, 3 * portTICK_PERIOD_MS) == pdTRUE)
        {
        
-        switch(rx_frame.MsgID)
+        if(rx_frame.MsgID == 0)
         {
-          case 0:  //emergency stop received
+          //emergency stop received
+        
+          
+          CR0_uiRx_EStop = 0;
+          CR0_uiTxSequenceIndex = 0;
+          CR0_uiTxIndex = 0;
+          CR0_uiTxSequenceBuffer[CR0_uiTxSequenceIndex] = 0;
+          Serial.println("RX ZERO");
+        
+        }
+        else if(rx_frame.MsgID == 100)
+        //receiving start of GPS data
+        {
+          if(CR0_uiGPSRxPacketIDExpected == 110)
           {
-            
-            CR0_uiRx_EStop = 0;
-            CR0_uiTxSequenceIndex = 0;
-            CR0_uiTxIndex = 0;
-            CR0_uiTxSequenceBuffer[CR0_uiTxSequenceIndex] = 0;
-            Serial.println("RX ZERO");
-            break;
+            CR0_uiTotalGPSRxPacketExpected = rx_frame.data.u8[0]
+            LoadRxData();
           }
-          case 110://receiving start of GPS data
+          else 
           {
+            strcpy(strCAN_RxGPS,"G,InValid");
             
-            
+          }
+        }
+          case 111:
+          case 112:
+          case 11  
             
             
             
@@ -241,49 +260,8 @@ unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned
     tx_frame.data.u8[0] = 0;
     return(0);
   }
-  else
+  else  //sending CAN Data 
   {
-    if((uiId >= 110) && (uiId <= 145))//GPS data
-    {
-      if(uiPacketIndx == 1)
-      {
-        tx_frame.data.u8[0] = uiPacketCount;
-        for(uiIndexThroughGPSSting = 1;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
-        {
-          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
-        }
-        return(uiPacketIndx + 1);
-      }
-      else
-      {
-        for(uiIndexThroughGPSSting = 0;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
-        {
-          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
-        }
-        return(uiPacketIndx + 1);
-      }
-     
-    }
-    else if ((uiId >= 150) && (uiId <= 190))  //IMU data
-    {
-      if(uiPacketIndx == 1)
-      {
-        tx_frame.data.u8[0] = uiPacketCount;
-        for(uiIndexThroughGPSSting = 1;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
-        {
-          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxIMU[uiIndexThroughGPSSting];
-        }
-        return(uiPacketIndx + 1);
-      }
-      else
-      {
-        for(uiIndexThroughGPSSting = 0;uiIndexThroughGPSSting < 8;uiIndexThroughGPSSting++)
-        {
-          tx_frame.data.u8[uiIndexThroughGPSSting] = strCAN_TxGPS[uiIndexThroughGPSSting];
-        }
-        return(uiPacketIndx + 1);
-      }
-    }
   }
   
 
