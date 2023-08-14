@@ -6,7 +6,7 @@
 //extern char strCAN_TxIMU[200];
 //extern unsigned int CR0_uiTxSequenceBuffer[11];
 //extern unsigned int CR0_uiTxSequenceIndex = 0;
-
+extern char bGPS_CAN_RX_PacketCorrupt;
 
 void setup() {
   Serial.begin(115200);
@@ -34,6 +34,7 @@ void loop()
       {
         LoadTxBuffer(100,0,0); //Request GPS data
         CR0_uiGPSRxPacketIDExpected = 110;
+        bGPS_CAN_RX_PacketCorrupt = 0;
         break;
       }
       case 'i':

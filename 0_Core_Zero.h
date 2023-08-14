@@ -26,11 +26,15 @@ const int rx_queue_size = 10;       // Receive Queue size
 
 TaskHandle_t Core_Zero;
 
+
 extern char strGPS[200];
 extern char strIMU[200];
 
+
+
 const int CR0_ciCANTimer =  10000;
 
+char bGPS_CAN_RX_PacketCorrupt;
 
 uint32_t CR0_u32Now;  //for timing testing
 uint32_t CR0_u32Last;
@@ -113,23 +117,37 @@ void Core_ZeroCode( void * pvParameters )
           Serial.println("RX ZERO");
         
         }
-        else if(rx_frame.MsgID == 100)
-        //receiving start of GPS data
+        else if((rx_frame.MsgID >= 110) && (rx_frame.MsgID < 150))
+        //receiving GPS data
         {
-          if(CR0_uiGPSRxPacketIDExpected == 110)
+          if(CR0_uiGPSRxPacketIDExpected != rx_frame.MsgID) //lost data packet ignore rest of data
           {
-            CR0_uiTotalGPSRxPacketExpected = rx_frame.data.u8[0]
-            LoadRxData();
+            strcpy(strCAN_RxGPS,"G,InValid");
+            bGPS_CAN_RX_PacketCorrupt = 1;
           }
           else 
           {
-            strcpy(strCAN_RxGPS,"G,InValid");
-            
-          }
+            if(bGPS_CAN_RX_PacketCorrupt == 0)
+            {
+              if(CR0_uiGPSRxPacketIDExpected != 110) //First packet
+              {
+                CR0_uiTotalGPSRxPacketExpected = rx_frame.data.u8[0]
+                
+                LoadRxData();
+                
+              }
+              else
+              {
+
+              }
+            }
+         }
+        else if(rx_frame.MsgID >= 150)
+        //receiving IMU data
+        {
+          
+
         }
-          case 111:
-          case 112:
-          case 11  
             
             
             
