@@ -34,7 +34,7 @@ extern char strIMU[200];
 
 const int CR0_ciCANTimer =  10000;
 
-char bGPS_CAN_RX_PacketCorrupt;
+char bTo_PI_Error_Code; bit 0 = GPS CAN RX PacketCorrupt, bit 1 = GPS Buffer overflow, ...
 
 uint32_t CR0_u32Now;  //for timing testing
 uint32_t CR0_u32Last;
@@ -51,18 +51,20 @@ unsigned int CR0_uiTxIndex = 0;
 unsigned int CR0_uiTxPacketIndex = 0;
 unsigned int CR0_uiTxPacketSize = 0;
 
-
+unsigned int CR0_uiRxGPSPacketIndex = 0;
 unsigned int CR0_uiGPSRxPacketIDExpected;
-unsigned int CR0_uiTotalGPSRxPacketExpected;
 unsigned int CR0_uiIMURxPacketIDExpected;
 
+unsigned int uiGPSBufferLoaded = 0;
 
+int CR0_iTotalGPSRxPacketExpected;
 
 char strCAN_RxGPS[200];
 char strCAN_RxIMU[200];
 
 void Core_ZeroCode( void * pvParameters );
-
+void LoadRxData(unsigned int uiPacketIndex, bool btLastPacket);
+unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned  int uiPacketIndx);
 
 void Core_ZEROInit()
 {
@@ -123,23 +125,38 @@ void Core_ZeroCode( void * pvParameters )
           if(CR0_uiGPSRxPacketIDExpected != rx_frame.MsgID) //lost data packet ignore rest of data
           {
             strcpy(strCAN_RxGPS,"G,InValid");
-            bGPS_CAN_RX_PacketCorrupt = 1;
+            bTo_PI_Error_Code |= 0x01;
           }
           else 
           {
-            if(bGPS_CAN_RX_PacketCorrupt == 0)
+            if((bTo_PI_Error_Code & 0x01)== 0)
             {
               if(CR0_uiGPSRxPacketIDExpected != 110) //First packet
               {
-                CR0_uiTotalGPSRxPacketExpected = rx_frame.data.u8[0]
-                
-                LoadRxData();
+                CR0_iTotalGPSRxPacketExpected = rx_frame.data.u8[0]
+                bTo_PI_Error_Code &= 0xFE;
                 
               }
               else
               {
+                CR0_uiRxGPSPacketIndex += 1;
+                            
 
               }
+              if(CR0_uiRxGPSPacketIndex > CR0_iTotalGPSRxPacketExpected)
+               {
+                  bTo_PI_Error_Code |= 0x01;
+               }
+               else if(CR0_uiRxGPSPacketIndex == CR0_iTotalGPSRxPacketExpected)
+               {
+                LoadRxData(CR0_uiRxGPSPacketIndex, 1);//last packet, set to pi
+               }
+               else
+               {
+                  LoadRxData(CR0_uiRxGPSPacketIndex, 0);
+               }
+                
+              
             }
          }
         else if(rx_frame.MsgID >= 150)
@@ -153,54 +170,6 @@ void Core_ZeroCode( void * pvParameters )
             
             
             
-            
-            
-            CR0_uiTxSequenceIndex += 1;
-            CR0_uiTxSequenceBuffer[CR0_uiTxSequenceIndex] = 100;
-            
-            if(CR0_uiTxSequenceIndex == 10)
-            {
-              CR0_uiTxSequenceIndex = 1;
-                                                    
-            }
-            if(CR0_uiTxSequenceIndex == CR0_uiTxIndex)
-            {
-              CR0_uiRx_EStop = 10;
-            }
-         
-            Serial.println("RX GPS");
-            // if (rx_frame.FIR.B.RTR != CAN_RTR)
-            // {
-            //  for (int i = 0; i < rx_frame.FIR.B.DLC; i++) 
-            //   {
-            //     printf("0x%02X ", rx_frame.data.u8[i]);
-            //   }
-            //   printf("\n");
-            // }
-          break;
-          }
-          case 101:  //requesting IMU data 
-          {
-            CR0_uiRx_EStop = 1;
-            CR0_uiTxSequenceBuffer[CR0_uiTxSequenceIndex] = 100;
-            CR0_uiTxSequenceIndex += 1;
-            if(CR0_uiTxSequenceIndex >= 10)
-            {
-              CR0_uiRx_EStop = 10;
-            }
-            
-            Serial.println("RX IMU");
-            // if (rx_frame.FIR.B.RTR != CAN_RTR)
-            // {
-            //  for (int i = 0; i < rx_frame.FIR.B.DLC; i++) 
-            //   {
-            //     printf("0x%02X ", rx_frame.data.u8[i]);
-            //   }
-            //   printf("\n");
-            // }
-          break;
-          }
-        }
       }
       
       // Send CAN Message
@@ -265,6 +234,39 @@ unsigned int  = 0;
   }
 }
 
+
+void LoadRxData(unsigned int uiPacketIndex,bool btLastPacket)
+{
+  unsigned int uiIndexThroughSting;
+
+  if(rx_frame.FIR.B.DLC == 8)
+  {
+    for(uiIndexThroughSting = 0;uiIndexThroughSting < 8;uiIndexThroughSting++)
+    {
+       strCAN_RxGPS[uiIndexThroughSting + (uiPacketIndex * 8)] = rx_frame.data.u8[uiIndexThroughSting];
+    }
+    if(btLastPacket)
+    {
+      //send string to PI
+      if(uiGPSBufferLoaded)
+      {
+        bTo_PI_Error_Code |= 0x02;
+      }
+      else
+      {
+        strcpy(strGPS,strCAN_RxGPS);
+        strcpy(strCAN_RxGPS,"0");
+        uiGPSBufferLoaded = 1;
+      }
+    }
+  }
+  else
+  {
+
+  }
+}
+
+
 unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned  int uiPacketIndx)
 {
   unsigned int uiIndexThroughGPSSting;
@@ -280,6 +282,7 @@ unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned
   }
   else  //sending CAN Data 
   {
+    
   }
   
 

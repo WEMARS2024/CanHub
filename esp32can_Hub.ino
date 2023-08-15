@@ -1,12 +1,18 @@
 
 #include "0_Core_Zero.h"
 
+#define MAX_TO_PI_BUFFER_SIZE 10
 
 //extern char strCAN_RxGPS[200];
 //extern char strCAN_TxIMU[200];
 //extern unsigned int CR0_uiTxSequenceBuffer[11];
 //extern unsigned int CR0_uiTxSequenceIndex = 0;
 extern char bGPS_CAN_RX_PacketCorrupt;
+
+char strToPIBuffer[MAX_TO_PI_BUFFER_SIZE];
+
+unsigned int uiToPI_Index;
+unsigned int uiToPI_Pointer;
 
 void setup() {
   Serial.begin(115200);
