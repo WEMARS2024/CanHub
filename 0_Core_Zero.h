@@ -131,7 +131,7 @@ void Core_ZeroCode( void * pvParameters )
           {
             if((bTo_PI_Error_Code & 0x01)== 0)
             {
-              if(CR0_uiGPSRxPacketIDExpected != 110) //First packet
+              if(CR0_uiGPSRxPacketIDExpected == 110) //First packet
               {
                 CR0_iTotalGPSRxPacketExpected = rx_frame.data.u8[0]
                 bTo_PI_Error_Code &= 0xFE;
@@ -172,85 +172,26 @@ void Core_ZeroCode( void * pvParameters )
             
       }
       
-      // Send CAN Message
-      CR0_ulCurrentMicrosCore0 = micros();
-      if ((CR0_ulCurrentMicrosCore0 - CR0_ulPreviousMicrosCore0) >= CR0_ciCANTimer)
-      {
-        CR0_ulPreviousMicrosCore0 = CR0_ulCurrentMicrosCore0;
-       if(CR0_uiRx_EStop) // no e stop
-       {
-         if(CR0_uiTxIndex != CR0_uiTxSequenceIndex) // CAN Sequence to send, therefore something to send
-         {
-           if(CR0_uiTxPacketIndex == 0)  //start of Tx packets to send, load packet lenght
-           {
-             switch(CR0_uiTxSequenceBuffer[CR0_uiTxIndex])
-             {
-               case 0:  //e stop
-               {
-                 CR0_uiTxPacketSize = 0;
-                 break;
-               }
-               case 100://requesting GPS data
-              {
-                if(Valid_GPS())
-                 CR0_uiTxPacketSize = ??;
-                 break;
-              break;
-              }
-              case 101:  //requesting IMU data 
-              {
-                CR0_uiTxPacketSize = ??;
-                 break;
-              break;
-              }
-             }
-             
-           }
-         }
-         if(CR0_uiTxSequenceIndex == CR0_uiTxIndex)
-         {
-           CR0_uiTxSequenceIndex = 0;
-           CR0_uiTxIndex = 0;
-         }
-         CR0_uiTxIndex
-CR0_uiTxPacketIndex = 0;
-unsigned int  = 0;
-
-       } 
-        
-        
-        ESP32Can.CANWriteFrame(&tx_frame);
-       
-      }
-       
-     
-           // asm volatile("esync; rsr %0,ccount":"=a" (CR0_u32Last)); // @ 240mHz clock each tick is ~4nS  
-            
-          //  asm volatile("esync; rsr %0,ccount":"=a" (CR0_u32Now));    
-           
-          
-        
-      
   }
 }
 
 
 void LoadRxData(unsigned int uiPacketIndex,bool btLastPacket)
 {
-  unsigned int uiIndexThroughSting;
+  unsigned int uiIndexThroughString;
 
   if(rx_frame.FIR.B.DLC == 8)
   {
-    for(uiIndexThroughSting = 0;uiIndexThroughSting < 8;uiIndexThroughSting++)
+    for(uiIndexThroughString = 0;uiIndexThroughString < 8;uiIndexThroughString++)
     {
-       strCAN_RxGPS[uiIndexThroughSting + (uiPacketIndex * 8)] = rx_frame.data.u8[uiIndexThroughSting];
+       strCAN_RxGPS[uiIndexThroughString + (uiPacketIndex * 8)] = rx_frame.data.u8[uiIndexThroughString];
     }
     if(btLastPacket)
     {
       //send string to PI
       if(uiGPSBufferLoaded)
       {
-        bTo_PI_Error_Code |= 0x02;
+        bTo_PI_Error_Code |= 0x02;  //buffer data not transfered to PI
       }
       else
       {
@@ -260,21 +201,18 @@ void LoadRxData(unsigned int uiPacketIndex,bool btLastPacket)
       }
     }
   }
-  else
-  {
-
-  }
+  
 }
 
 
 unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned  int uiPacketIndx)
 {
-  unsigned int uiIndexThroughGPSSting;
+ 
 
   tx_frame.FIR.B.FF = CAN_frame_std;
   tx_frame.MsgID = uiId;
   tx_frame.FIR.B.DLC = 8;
-  if(uiPacketCount == 0)
+  if(uiPacketCount == 0) //sending commands
   {
     tx_frame.FIR.B.DLC = 1;
     tx_frame.data.u8[0] = 0;
@@ -282,12 +220,12 @@ unsigned int LoadTxBuffer(unsigned int uiId, unsigned int uiPacketCount,unsigned
   }
   else  //sending CAN Data 
   {
-    
+    return(0);
   }
   
 
 }
 
-void()
+
 
 #endif

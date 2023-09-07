@@ -39,6 +39,7 @@ void loop()
       case 'G':
       {
         LoadTxBuffer(100,0,0); //Request GPS data
+        ESP32Can.CANWriteFrame(&tx_frame);
         CR0_uiGPSRxPacketIDExpected = 110;
         bGPS_CAN_RX_PacketCorrupt = 0;
         break;
@@ -47,6 +48,7 @@ void loop()
       case 'I':
       {
         LoadTxBuffer(101,0,0); //request IMU data
+        ESP32Can.CANWriteFrame(&tx_frame);
         CR0_uiIMURxPacketIDExpected = 150;
         break;
       }
@@ -54,6 +56,7 @@ void loop()
       case 'e':
       {
         LoadTxBuffer(0,0,0);  //emergency stop
+        ESP32Can.CANWriteFrame(&tx_frame);
         break;
       }
     }
@@ -61,6 +64,17 @@ void loop()
 
   }
 
-  if()
+  if(uiGPSBufferLoaded)
+  {
+    Serial.print(strGPS);
+    uiGPSBufferLoaded = 0;
+  }
+
+  if(uiIMUBufferLoaded)
+  {
+    Serial.print(strIMU);
+    uiIMUBufferLoaded = 0;
+  }
+
   
 }
